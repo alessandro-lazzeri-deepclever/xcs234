@@ -14,6 +14,7 @@ yaml.add_constructor("!join", join)
 config_file = open("config/q6_dqn.yml")
 config = yaml.load(config_file, Loader=yaml.FullLoader)
 
+
 ############################################################
 # Problem 6: Implementing DeepMind's DQN
 ############################################################
@@ -59,6 +60,51 @@ class NatureQN(Linear):
         img_height, img_width, n_channels = state_shape
         num_actions = self.env.action_space.n
         ### START CODE HERE ###
+        self.q_network = nn.Sequential(
+            nn.Conv2d(n_channels * config["hyper_params"]["state_history"],
+                      32,
+                      8,
+                      4,
+                      2),  # 1 + (img_height + 2*2-(8-1)-1) // 4 = 21
+            nn.ReLU(),
+            nn.Conv2d(32,
+                      64,
+                      4,
+                      2),  # 1 + (pred - (4-1)-1) // 2 = 9
+            nn.ReLU(),
+            nn.Conv2d(64,
+                      64,
+                      3,
+                      1),  # 1 + (pred - (3-1)-1) = 7
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(3136, 512),
+            nn.ReLU(),
+            nn.Linear(512, num_actions)
+        )
+
+        self.target_network = nn.Sequential(
+            nn.Conv2d(n_channels * config["hyper_params"]["state_history"],
+                      32,
+                      8,
+                      4,
+                      2),  # 1 + (img_height + 2*2-(8-1)-1) // 4 = 21
+            nn.ReLU(),
+            nn.Conv2d(32,
+                      64,
+                      4,
+                      2),  # 1 + (pred - (4-1)-1) // 2 = 9
+            nn.ReLU(),
+            nn.Conv2d(64,
+                      64,
+                      3,
+                      1),  # 1 + (pred - (3-1)-1) = 5
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(3136, 512),
+            nn.ReLU(),
+            nn.Linear(512, num_actions)
+        )
         ### END CODE HERE ###
 
     ############################################################
@@ -89,6 +135,8 @@ class NatureQN(Linear):
         out = None
 
         ### START CODE HERE ###
+        state = torch.permute(state,[0,3,1,2])
+        out = self.target_network(state) if network == "target_network" else self.q_network(state)
         ### END CODE HERE ###
 
         return out

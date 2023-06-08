@@ -53,6 +53,7 @@ class LinearSchedule(object):
                 self.epsilon value, which is self.eps_end.
         """
         ### START CODE HERE ###
+        self.epsilon = self.eps_end if t > self.nsteps else self.eps_begin * (self.nsteps - t) / self.nsteps + self.eps_end * t / self.nsteps
         ### END CODE HERE ###
 
 
@@ -91,6 +92,7 @@ class LinearExploration(LinearSchedule):
                 env.action_space.sample() to generate a random action
         """
         ### START CODE HERE ###
+        return best_action if np.random.random() > self.epsilon else self.env.action_space.sample()
         ### END CODE HERE ###
 
 

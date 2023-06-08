@@ -54,6 +54,9 @@ class Linear(DQN):
         img_height, img_width, n_channels = state_shape
         num_actions = self.env.action_space.n
         ### START CODE HERE ###
+        in_shape = img_height * img_width * n_channels * self.config["hyper_params"]["state_history"]
+        self.q_network = nn.Linear(in_shape, num_actions)
+        self.target_network = nn.Linear(in_shape, num_actions)
         ### END CODE HERE ###
 
     ############################################################
@@ -84,6 +87,8 @@ class Linear(DQN):
         out = None
 
         ### START CODE HERE ###
+        state = torch.flatten(state, start_dim=1)
+        out = self.q_network(state) if network == "q_network" else self.target_network(state)
         ### END CODE HERE ###
 
         return out
@@ -106,6 +111,7 @@ class Linear(DQN):
         """
 
         ### START CODE HERE ###
+        self.target_network.load_state_dict(self.q_network.state_dict())
         ### END CODE HERE ###
 
     ############################################################
@@ -163,6 +169,12 @@ class Linear(DQN):
         """
         gamma = self.config["hyper_params"]["gamma"]
         ### START CODE HERE ###
+
+        mask = ~torch.bitwise_or(terminated_mask, truncated_mask)
+        q_samp = rewards + (gamma * torch.max(target_q_values, dim=1)[0]) * mask
+        q = torch.squeeze(torch.gather(q_values,dim=1,index=torch.unsqueeze(actions,dim=1).to(torch.int64)))
+
+        return F.mse_loss(q_samp,q)
         ### END CODE HERE ###
 
     ############################################################
@@ -181,4 +193,5 @@ class Linear(DQN):
             What are the input to the optimizer's constructor?
         """
         ### START CODE HERE ###
+        self.optimizer = torch.optim.Adam(self.q_network.parameters())
         ### END CODE HERE ###
